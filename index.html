@@ -1,0 +1,250 @@
+<!DOCTYPE html>
+<html lang="nb">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover, maximum-scale=1">
+<title>Viltterreng – rype &amp; skogsfugl</title>
+<meta name="theme-color" content="#1e2e21">
+<link rel="manifest" href="./manifest.json">
+<link rel="icon" href="./icon-192.png">
+<link rel="apple-touch-icon" href="./icon-192.png">
+<link rel="stylesheet" href="./libs/leaflet/leaflet.css">
+<link rel="stylesheet" href="./style.css">
+</head>
+<body>
+<div id="app">
+
+  <header class="topbar">
+    <h1>🌲 Viltterreng</h1>
+    <div>
+      <span class="status-dot" id="statusDot"></span>
+      <span id="statusText" style="font-size:12px;color:var(--text-dim);">online</span>
+    </div>
+  </header>
+
+  <main>
+
+    <!-- KART -->
+    <section id="view-kart" class="view active">
+      <div style="position:relative; flex:1; min-height:0;">
+        <div id="map"></div>
+        <div class="map-toolbar">
+          <button class="btn small" id="btnLocate">📍 Posisjon</button>
+          <button class="btn small" id="btnAddPoint">➕ Punkt</button>
+          <button class="btn small" id="btnDownloadArea">⬇️ Last ned kart</button>
+          <button class="btn small primary" id="btnAnalyser">🎯 Analyser (sept)</button>
+          <select class="btn small" id="analyseOpplosning" title="Hvor finmasket analysen skal være">
+            <option value="7">Grovt 7×7</option>
+            <option value="11" selected>Detaljert 11×11</option>
+            <option value="15">Finmasket 15×15</option>
+            <option value="19">Svært fint 19×19</option>
+          </select>
+          <button class="btn small" id="btnTestKilder">🔍 Test data</button>
+          <button class="btn small" id="btnFjernAnalyse">✖️ Fjern</button>
+        </div>
+        <div id="zoomBadge" class="zoom-badge" title="Zoomnivå og hvor store rutene blir med valgt oppløsning"></div>
+        <div id="analyseInfo" class="analyse-info" style="display:none;"></div>
+      </div>
+    </section>
+
+    <!-- HABITATGUIDE -->
+    <section id="view-guide" class="view">
+      <div class="content-scroll">
+        <div class="panel">
+          <h2>Habitatguide</h2>
+          <p>Generell viltfaglig kunnskap om hvor rype og skogsfugl typisk oppholder seg. Bruk som utgangspunkt — lokale forhold og bestand varierer.</p>
+        </div>
+        <div class="panel" id="speciesPanel">
+          <h2>Artene</h2>
+          <div id="speciesList"></div>
+        </div>
+        <div class="panel">
+          <h2>Sesong</h2>
+          <div id="seasonList"></div>
+        </div>
+        <div class="panel">
+          <h2>Døgnrytme</h2>
+          <ul id="dognList"></ul>
+        </div>
+        <div class="panel">
+          <h2>Vær &amp; vind</h2>
+          <ul id="vaerList"></ul>
+        </div>
+        <div class="panel">
+          <h2>Septemberanalyse – slik regnes den ut</h2>
+          <p>Knappen «🎯 Analyser (sept)» på Kart-fanen deler kartutsnittet i ruter og henter faktiske dataverdier for hver rute fra tre offentlige kilder. Området som vurderes markeres med en stiplet ramme. Hver rute får poeng etter hvor godt den passer skogsfugl i september:</p>
+          <p><strong>Oppløsning:</strong> nedtrekksmenyen ved siden av knappen styrer hvor finmasket rutenettet blir. Nede til venstre på kartet står det hele tiden hvilket zoomnivå du er på og hvor store rutene blir med valgt innstilling — med grønn, gul eller rød prikk. Sikt på <strong>grønn</strong>, altså ruter på 300 meter eller mer.</p>
+          <p>Rutestørrelsen avhenger både av innstillingen og av hvor mye du har zoomet. På mobil gir zoom 12 med 11×11 rundt 680 m, og zoom 13 med 11×11 rundt 340 m — begge gode. Zoomer du til nivå 14 eller nærmere blir alle innstillingene for fine. Zoom gjerne inn etterpå for å lese terrenget, men kjør analysen på zoom 12–13.</p>
+          <p>Grunnen til 300-metersgrensen: skogfigurene i kildedataene er typisk 10–40 hektar, altså 350–600 meter tvers over. Mindre ruter deler opp samme figur uten å tilføre informasjon. Finere rutenett plasserer likevel <em>grensene</em> mer presist, og siden kantsonen er det tyngst vektede signalet, er 400–600 m bedre enn 1000 m.</p>
+          <p>Bare de lovende rutene fargelegges, slik at du fortsatt ser terrenget under. Ruter som er vann, dyrket mark eller bebyggelse lukes bort før de øvrige oppslagene gjøres.</p>
+          <p><strong>Storfugl og orrfugl regnes hver for seg</strong>, siden de vil ha ulike ting og du gjerne vil vite hvilken art et område peker mot — blant annet av hensyn til haglvalg. Fargen på ruta viser arten, styrken på fargen hvor lovende den er:</p>
+          <ul>
+            <li><span style="color:#9b7bf5;">■</span> <strong>Fiolett – storfugl.</strong> Poeng for skogsmark (2), naturskog-sannsynlighet (3), skogalder der 80 år og eldre teller mest (3), furuandel (2) og kantsone mot myr (2). Maks 12.</li>
+            <li><span style="color:#ef9a3d;">■</span> <strong>Oransje – orrfugl.</strong> Poeng for myr eller skog (2), kantsone skog/myr som teller tyngst (3), ung skog i gjenvekst (3), lauvandel (2), aldersmosaikk i nærheten (2) og noe naturskogspreg (1). Maks 13.</li>
+            <li><span style="color:#33d17a;">■</span> <strong>Grønn – begge.</strong> Skiller mindre enn 12 prosentpoeng mellom artene, og da er det ikke redelig å utrope en vinner.</li>
+          </ul>
+          <p>Hver art måles mot hva som var oppnåelig med de dataene ruta faktisk fikk, så en manglende kilde gir ikke kunstig lav score. Trykker du på en rute, ser du prosent og poeng for begge arter, med begrunnelsen hver for seg. Infopanelet oppsummerer hvor mange ruter som peker mot hver art.</p>
+          <p>Trykk på en rute i kartet for å se nøyaktig hvilke faktorer som slo ut, og hvilke rådata den bygger på. Analysen krever internett og egner seg godt til planlegging hjemme før turen.</p>
+          <p>Får du ikke resultater, bruk knappen <strong>«🔍 Test data»</strong> på Kart-fanen. Den sjekker hver av de tre tjenestene enkeltvis, markerer testpunktet med en gul ring, og viser rådataene hvis noe ikke lar seg tolke.</p>
+          <p>Svarer bare noen av kildene, rangerer appen fortsatt rutene mot hverandre ut fra det den faktisk har — og sier tydelig fra i hver rute hvor mange kilder vurderingen bygger på.</p>
+          <p style="color:var(--accent-2);">Merk: dette er modellert kartdata, ikke observasjoner av fugl. Den sier noe om hvor <em>habitatet</em> ser bra ut – ikke at det står fugl der. Lokalkunnskap og egne observasjoner slår alltid en modell.</p>
+        </div>
+        <div class="panel">
+          <h2>Hva analysen ikke kan – les dette</h2>
+          <p><strong>Dataene kan være svært gamle.</strong> Skogdataene bygger på satellittbilder som mange steder er 15–25 år gamle. Appen viser bildeåret for hver rute og advarer når det er gammelt. Det viktigste: <em>flatehogst etter bildeåret er helt usynlig</em>. En rute merket «gammel skog, 90 år» kan i dag være hogstflate. Bruk kartlaget «Flyfoto (sjekk hogst)» eller flyfoto-lenken i hver rute før du stoler på et område.</p>
+          <p><strong>Kildene advarer selv mot detaljbruk.</strong> NIBIO skriver at nøyaktigheten for enkeltpunkter i SAT-SKOG er «relativt lav», og at kartet gjelder «på et overordnet nivå». Miljødirektoratet skriver at naturskogkartet ikke er verifisert i felt, ikke må brukes alene som beslutningsgrunnlag, og må brukes med varsomhet i detaljert planlegging.</p>
+          <p><strong>Finere rutenett gir ikke mer kunnskap.</strong> Kildedataenes skogfigurer er typisk 10–40 hektar. Lager du ruter på 1 hektar, henter mange naboruter samme verdi. Appen regner ut dette og sier fra når rutene er finere enn kilden.</p>
+          <p><strong>Det viktigste septemberfôret mangler.</strong> Skogsfugl lever i stor grad av blåbær i september. Ingen av datakildene kartlegger feltsjiktet. Appen bruker omveier – eldre skog, middels bonitet, furuinnslag – men det er slutninger, ikke data.</p>
+          <p><strong>Poengmodellen er ikke validert.</strong> Vektene bygger på alminnelig viltfaglig kunnskap, men er aldri testet mot faktiske fugleobservasjoner.</p>
+          <p><strong>Bestanden svinger mer enn habitatet.</strong> Skogsfuglbestanden varierer voldsomt mellom år med smågnagersyklus og været i klekketida. Et middels terreng i et godt år slår et utmerket terreng i et bunnår. Appen vet ingenting om årets bestand – spør grunneier eller lokale jegere.</p>
+          <p><strong>Ikke tatt hensyn til:</strong> forstyrrelse fra veier, hytter og stier (storfugl er svært sky), terrengform og helning, jakttrykk, og hvor du faktisk har lov å jakte. Jakttida for storfugl og orrfugl er 10. september til 23. desember – avklar alltid grunneiertillatelse selv.</p>
+        </div>
+        <div class="panel">
+          <h2>Analysekart (offentlige data)</h2>
+          <p>Disse lagene kan også slås på manuelt oppå kartet (kartlagvelgeren øverst til høyre på Kart-fanen). Krever internett — lagres ikke for offline bruk.</p>
+          <div id="analysekartList"></div>
+        </div>
+      </div>
+    </section>
+
+    <!-- SJEKKLISTE -->
+    <section id="view-sjekk" class="view">
+      <div class="content-scroll">
+        <div class="panel">
+          <h2>Terrengsjekkliste</h2>
+          <p>Fyll ut mens du står i terrenget for å få en enkel vurdering av hvor lovende stedet er. Fungerer helt uten nett.</p>
+
+          <label>Art du leter etter</label>
+          <select id="fArt">
+            <option value="lirype">Lirype</option>
+            <option value="fjellrype">Fjellrype</option>
+            <option value="storfugl">Storfugl (skogsfugl)</option>
+            <option value="orrfugl">Orrfugl</option>
+          </select>
+
+          <label>Høyde over havet (moh)</label>
+          <input type="number" id="fHoyde" placeholder="f.eks. 650" inputmode="numeric">
+          <button class="btn small" id="btnBrukGpsHoyde" style="margin-top:6px;">Bruk GPS-høyde</button>
+
+          <label>Vegetasjonstype</label>
+          <select id="fVeg">
+            <option value="snaufjell">Snaufjell / lynghei</option>
+            <option value="vierkratt">Vierkratt / bjørkebelte</option>
+            <option value="myr">Myr</option>
+            <option value="barskog_gammel">Barskog, eldre</option>
+            <option value="barskog_ung">Barskog/hogstflate, ung</option>
+            <option value="lauvskog">Lauvskog</option>
+            <option value="dyrket">Dyrket mark / kulturlandskap</option>
+          </select>
+
+          <label>Terrengform</label>
+          <select id="fTerrengform">
+            <option value="rygg">Rygg / rabbe</option>
+            <option value="sorhelling">Sørvendt / østvendt helling</option>
+            <option value="nordhelling">Nordvendt helling</option>
+            <option value="dalbunn">Dalbunn / forsenkning</option>
+            <option value="kant">Kantsone mot åpent</option>
+          </select>
+
+          <label>Nærhet til vann/myr</label>
+          <div class="radio-row" id="fVannRow">
+            <label><input type="radio" name="fVann" value="ja"> Nær (under ~200 m)</label>
+            <label><input type="radio" name="fVann" value="nei" checked> Langt unna</label>
+          </div>
+
+          <label>Le for vær/vind akkurat nå</label>
+          <div class="radio-row" id="fLeRow">
+            <label><input type="radio" name="fLe" value="ja"> Ja, i le</label>
+            <label><input type="radio" name="fLe" value="nei" checked> Nei, eksponert</label>
+          </div>
+
+          <label>Tegn til vilt (spor, ekskrementer, fjær, spillplass)</label>
+          <div class="radio-row" id="fTegnRow">
+            <label><input type="radio" name="fTegn" value="ja"> Ja</label>
+            <label><input type="radio" name="fTegn" value="nei" checked> Nei</label>
+          </div>
+
+          <button class="btn primary block" id="btnBeregnScore" style="margin-top:16px;">Beregn vurdering</button>
+
+          <div id="scoreResult"></div>
+
+          <button class="btn block" id="btnLagrePunkt" style="margin-top:12px; display:none;">💾 Lagre dette punktet i loggen</button>
+        </div>
+      </div>
+    </section>
+
+    <!-- LOGG -->
+    <section id="view-logg" class="view">
+      <div class="content-scroll">
+        <div class="panel">
+          <h2>Loggbok</h2>
+          <p>Observasjoner og vurderte punkter bygger opp ditt eget kart over gode områder over tid.</p>
+          <button class="btn small" id="btnNyObservasjon">➕ Ny observasjon</button>
+          <button class="btn small" id="btnEksporter">⬇️ Eksporter (CSV)</button>
+        </div>
+        <div class="panel" id="nyObsPanel" style="display:none;">
+          <h3>Ny observasjon</h3>
+          <label>Art</label>
+          <select id="oArt">
+            <option value="lirype">Lirype</option>
+            <option value="fjellrype">Fjellrype</option>
+            <option value="storfugl">Storfugl</option>
+            <option value="orrfugl">Orrfugl</option>
+            <option value="annet">Annet / ukjent</option>
+          </select>
+          <label>Antall</label>
+          <input type="number" id="oAntall" min="1" value="1">
+          <label>Dato</label>
+          <input type="date" id="oDato">
+          <label>Notat</label>
+          <textarea id="oNotat" rows="3" placeholder="F.eks. kobbel på 6, sørvendt li, tett vierkratt..."></textarea>
+          <button class="btn primary block" id="btnLagreObs" style="margin-top:10px;">Lagre med GPS-posisjon</button>
+        </div>
+        <div class="panel">
+          <h2>Tidligere oppføringer</h2>
+          <div id="loggListe"></div>
+        </div>
+      </div>
+    </section>
+
+    <!-- INNSTILLINGER -->
+    <section id="view-innstillinger" class="view">
+      <div class="content-scroll">
+        <div class="panel">
+          <h2>Offline-områder</h2>
+          <p>Antall kartruter lagret for offline bruk: <strong id="tileCount">–</strong></p>
+          <button class="btn danger small" id="btnClearTiles">🗑️ Slett nedlastede kart</button>
+        </div>
+        <div class="panel">
+          <h2>Versjon</h2>
+          <p>Denne appen kjører versjon: <strong id="appVersion">–</strong></p>
+          <p style="font-size:12.5px;">Sjekk dette tallet hvis du er usikker på om en ny opplasting faktisk har slått gjennom på lenken du tester.</p>
+          <button class="btn small" id="btnTvingOppdater">🔄 Se etter ny versjon</button>
+        </div>
+        <div class="panel">
+          <h2>Om appen</h2>
+          <p>Viltterreng er et hjelpeverktøy for planlegging og terrengvurdering ved jakt på rype og skogsfugl. Habitatinformasjonen er generell viltfaglig kunnskap og erstatter ikke lokalkunnskap, gjeldende jakttider/kvoter eller grunneiers regler.</p>
+          <p>Bakgrunnskart: OpenTopoMap (terreng med høydekoter), med OpenStreetMap og Kartverket som alternativer i kartlagvelgeren. Husk å laste ned kartområdet mens du har nett, før du drar til fjells.</p>
+          <p>Analysedata: Miljødirektoratet/Landbruksdirektoratet (naturskog) og NIBIO (SAT-SKOG skogalder, AR5 arealtype). Disse hentes direkte fra nett og lagres ikke offline.</p>
+        </div>
+      </div>
+    </section>
+
+  </main>
+
+  <nav class="tabbar">
+    <button data-view="kart" class="active"><span class="icon">🗺️</span>Kart</button>
+    <button data-view="guide"><span class="icon">📖</span>Guide</button>
+    <button data-view="sjekk"><span class="icon">✅</span>Sjekkliste</button>
+    <button data-view="logg"><span class="icon">📒</span>Logg</button>
+    <button data-view="innstillinger"><span class="icon">⚙️</span>Mer</button>
+  </nav>
+
+</div>
+
+<script src="./libs/leaflet/leaflet.js"></script>
+<script src="./habitat-data.js"></script>
+<script src="./app.js"></script>
+<script src="./analyse.js"></script>
+</body>
+</html>
