@@ -533,23 +533,35 @@
   // og poenget er nettopp å se terrenget (koter, bekker, myrer) under de
   // områdene som peker seg ut. Den stiplede rammen viser uansett hvor
   // analysen er kjørt, så «lite lovende» trenger ingen farge.
-  // Fargen sier hvilken ART ruta peker mot, styrken sier hvor lovende den er.
-  const ART_FARGE = {
-    storfugl: "#9b7bf5", // fiolett
-    orrfugl:  "#ef9a3d", // oransje
-    begge:    "#33d17a", // grønn
+  // FARGE GJØR ÉN JOBB: den viser hvor lovende ruta er, ingenting annet.
+  //
+  // Tidligere kodet fargen både art og styrke – tre fargetoner ganger tre
+  // styrker ble ni varianter oppå et terrengkart, og da lot det seg ikke lese
+  // som sammenhengende områder. Nå er det én fargetone (magenta) i fallende
+  // lyshet, slik at gode områder trer fram som former du kan trekke en rute
+  // gjennom. Magenta er valgt fordi den ikke kolliderer med kartets grønt,
+  // brunt og blått. Rampen er validert: én fargetone, jevnt fallende lyshet,
+  // og lyseste trinn ligger over kontrastgulvet mot skoggrønn bakgrunn.
+  //
+  // Arten vises i stedet som en bokstav i ruta – et eget kanal, så den ikke
+  // stjeler fargekanalen fra styrken.
+  const NIVA_STIL = {
+    svaert_god: { farge: "#a11f57", opacity: 0.60, kant: 1.8, tekst: "Svært lovende" },
+    god:        { farge: "#d1477d", opacity: 0.38, kant: 0,   tekst: "Lovende" },
+    middels:    { farge: "#e87ba4", opacity: 0.00, kant: 0,   tekst: "Middels" },
+    lav:        { farge: "#e87ba4", opacity: 0.00, kant: 0,   tekst: "Lite lovende" },
+    uegnet:     { farge: "#888",    opacity: 0.00, kant: 0,   tekst: "Uegnet" },
   };
+
   const ART_NAVN = {
     storfugl: "Storfugl",
     orrfugl: "Orrfugl",
     begge: "Begge like aktuelle",
   };
-  const NIVA_STIL = {
-    svaert_god: { opacity: 0.55, kant: 1.6, tekst: "Svært lovende" },
-    god:        { opacity: 0.36, kant: 0,   tekst: "Lovende" },
-    middels:    { opacity: 0.18, kant: 0,   tekst: "Middels" },
-    lav:        { opacity: 0.00, kant: 0,   tekst: "Lite lovende" },
-    uegnet:     { opacity: 0.00, kant: 0,   tekst: "Uegnet" },
+  const ART_BOKSTAV = {
+    storfugl: "S",
+    orrfugl: "O",
+    begge: "S/O",
   };
 
   // ---- Hurtigtest av datakildene -----------------------------------------
@@ -790,14 +802,27 @@
         if (res.dominant) artTeller[res.dominant]++;
       }
 
-      const farge = ART_FARGE[res.dominant] || ART_FARGE.begge;
       const rect = L.rectangle(cell.bounds, {
-        color: farge,
+        color: stil.farge,
         weight: stil.kant,
-        opacity: stil.kant ? 0.9 : 0,
-        fillColor: farge,
+        opacity: stil.kant ? 0.95 : 0,
+        fillColor: stil.farge,
         fillOpacity: stil.opacity,
       }).addTo(resultLayer);
+
+      // Arten som bokstav midt i ruta – egen kanal, ikke farge.
+      if (res.dominant) {
+        L.marker([cell.lat, cell.lng], {
+          interactive: false,
+          keyboard: false,
+          icon: L.divIcon({
+            className: "",
+            html: `<span class="art-merke">${ART_BOKSTAV[res.dominant]}</span>`,
+            iconSize: [30, 16],
+            iconAnchor: [15, 8],
+          }),
+        }).addTo(resultLayer);
+      }
 
       const detaljer = [];
       const nsP = normNaturskog(cell.naturskog);
@@ -839,10 +864,8 @@
 
       rect.bindPopup(
         `${artLinje}<br><span style="opacity:.8;">${stil.tekst} – september</span><br><br>` +
-        `<span style="color:${ART_FARGE.storfugl};">■</span> Storfugl ${pst(s2)} % ` +
-        `<small>(${s2.poeng}/${s2.maks} p)</small><br>` +
-        `<span style="color:${ART_FARGE.orrfugl};">■</span> Orrfugl ${pst(o2)} % ` +
-        `<small>(${o2.poeng}/${o2.maks} p)</small>` +
+        `<strong>S</strong> Storfugl ${pst(s2)} % <small>(${s2.poeng}/${s2.maks} p)</small><br>` +
+        `<strong>O</strong> Orrfugl ${pst(o2)} % <small>(${o2.poeng}/${o2.maks} p)</small>` +
         `<br><br><u>Storfugl</u><br>` + (s2.grunner.length ? s2.grunner.map((g) => "• " + g).join("<br>") : "• ingen utslag") +
         `<br><br><u>Orrfugl</u><br>` + (o2.grunner.length ? o2.grunner.map((g) => "• " + g).join("<br>") : "• ingen utslag") +
         `<br><br><small>Basert på ${res.kilder} av 3 datakilder.` +
@@ -891,16 +914,16 @@
       `<strong>Septemberanalyse – skogsfugl</strong><br>` +
       `<span style="color:var(--accent-2);">Rutenett ${N}×${N} — hver rute ` +
       `<strong>${info.meterLng} × ${info.meterLat} m</strong>. Kantsoner søkt innenfor ${KANT_AVSTAND_M} m.</span><br><br>` +
-      `<span style="color:${ART_FARGE.storfugl};">■</span> Storfugl &nbsp; ` +
-      `<span style="color:${ART_FARGE.orrfugl};">■</span> Orrfugl &nbsp; ` +
-      `<span style="color:${ART_FARGE.begge};">■</span> Begge<br>` +
-      `<small>Fargen viser hvilken art ruta peker mot, styrken på fargen hvor lovende den er. ` +
-      `Trykk på en rute for å se poeng for begge arter.</small><br>` +
+      `<span style="color:${NIVA_STIL.svaert_god.farge};">■</span> Svært lovende &nbsp; ` +
+      `<span style="color:${NIVA_STIL.god.farge};">■</span> Lovende<br>` +
+      `<small>Fargestyrken viser hvor lovende ruta er. Bokstaven viser arten: ` +
+      `<strong>S</strong> storfugl, <strong>O</strong> orrfugl, <strong>S/O</strong> begge. ` +
+      `Svakere områder står uten farge så du ser terrenget.</small><br>` +
       `${antallGode} av ${cells.length} ruter kom ut som lovende eller bedre` +
       (antallGode
-        ? ` — av dem <strong style="color:${ART_FARGE.storfugl};">${artTeller.storfugl} storfugl</strong>, ` +
-          `<strong style="color:${ART_FARGE.orrfugl};">${artTeller.orrfugl} orrfugl</strong>, ` +
-          `<strong style="color:${ART_FARGE.begge};">${artTeller.begge} begge</strong>`
+        ? ` — av dem <strong>${artTeller.storfugl} storfugl</strong>, ` +
+          `<strong>${artTeller.orrfugl} orrfugl</strong>, ` +
+          `<strong>${artTeller.begge} begge</strong>`
         : "") +
       (info.hoppetOver ? `, og ${info.hoppetOver} ruter ble luket bort som vann/dyrket mark/bebyggelse` : "") +
       `.` +

@@ -279,6 +279,21 @@ select, input[type="text"], input[type="number"], input[type="date"], textarea {
 
 .marker-obs { filter: drop-shadow(0 0 2px #000); }
 
+/* Artsbokstav i analyserutene. Hvit tekst med mørk kontur leses over både
+   lyst og mørkt kartunderlag, uten å legge til en ny farge på kartet. */
+.art-merke {
+  display: block;
+  width: 30px;
+  text-align: center;
+  font-size: 12px;
+  font-weight: 700;
+  line-height: 16px;
+  color: #fff;
+  text-shadow: 0 0 3px #000, 0 0 2px #000, 1px 1px 1px #000;
+  pointer-events: none;
+  user-select: none;
+}
+
 /* Alltid synlig visning av zoomnivå og hvor store analyserutene blir.
    Står nederst til venstre, over Leaflets attribusjon i høyre hjørne. */
 .zoom-badge {
