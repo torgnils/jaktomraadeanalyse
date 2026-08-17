@@ -2,6 +2,7 @@
 
 En liten "web-app" (PWA) du kan legge til på hjemskjermen på mobilen. Den gir:
 
+
 - **Kart** med flere bakgrunnskart (OpenTopoMap, OpenStreetMap, Kartverket) og to **analysekart** du kan slå på oppå kartet: "Naturskog – sannsynlighet" (Miljødirektoratet/Landbruksdirektoratet, lansert januar 2025) og "Skogalder" (NIBIOs SAT-SKOG) — disse viser hvor det er størst sannsynlighet for gammel, lite påvirket skog, som er svært viktig habitat for særlig storfugl. Slås av/på via kartlagvelgeren øverst til høyre på kartet. Krever internett (lagres ikke offline).
 - Mulighet til å laste ned bakgrunnskartet for et område på forhånd slik at det virker uten mobildekning ute i terrenget.
 - **Septemberanalyse for skogsfugl**: knappen "🎯 Analyser (sept)" deler kartutsnittet i ruter, henter faktiske dataverdier for hver rute (naturskog-sannsynlighet, skogalder, treslagsfordeling og arealtype) og fargelegger hvilke områder som ser mest lovende ut for storfugl/orrfugl på høstjakta. Oppløsningen er valgbar fra 7×7 til 19×19 ruter, og rutestørrelsen i meter vises etter hver kjøring. Trykk på en rute for å se nøyaktig hvorfor den er vurdert slik. Krever internett – egner seg godt til planlegging hjemme før turen.
